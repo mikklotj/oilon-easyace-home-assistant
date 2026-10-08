@@ -1,0 +1,105 @@
+# Example script: change one point of the heating circuit 2 heat curve.
+#
+# !!! READ README.md "Safety" FIRST !!!
+# This writes a setpoint to the heat pump controller. A wrong value can make
+# the house too cold or too warm, or make the heat pump use its electric heater.
+# The OA codes below were observed on ONE unit. Check them on your own unit
+# (docs/registers.md, "Finding OA codes for your own unit") before use.
+#
+# Requires rest_command.oilon_easyace_write_value from packages/oilon_easyace.yaml.
+# Paste under `script:` in scripts.yaml (without the top-level `script:` key),
+# or keep it as a package file in <config>/packages/.
+#
+# Call it from a dashboard button or Developer tools -> Actions:
+#   action: script.oilon_easyace_set_curve_point
+#   data:
+#     point: p3
+#     value: 28.5
+
+script:
+  oilon_easyace_set_curve_point:
+    alias: "Oilon EasyAce: set heat curve point (circuit 2)"
+    description: >-
+      Writes one heat curve setpoint of heating circuit 2 through the
+      controller's JSON API and refreshes the curve sensors.
+    mode: queued
+    max: 10
+    fields:
+      point:
+        name: Curve point
+        required: true
+        selector:
+          select:
+            options:
+              - label: "Maximum supply temperature"
+                value: max
+              - label: "Point 1 (coldest)"
+                value: p1
+              - label: "Point 2"
+                value: p2
+              - label: "Point 3"
+                value: p3
+              - label: "Point 4"
+                value: p4
+              - label: "Point 5"
+                value: p5
+              - label: "Point 6 (warmest)"
+                value: p6
+              - label: "Minimum supply temperature"
+                value: min
+      value:
+        name: Supply temperature
+        required: true
+        selector:
+          number:
+            # Conservative limits for underfloor/radiator heating. Adjust them to
+            # what your heating system and installer allow.
+            min: 15
+            max: 55
+            step: 0.5
+            unit_of_measurement: "°C"
+    sequence:
+      - variables:
+          oa: >-
+            {{ {
+              'max': 'ACMk5cPwAAE=',
+              'p1': 'ACN1L8PwAAE=',
+              'p2': 'ACMWH8PwAAE=',
+              'p3': 'ACM3D8PwAAE=',
+              'p4': 'ACPQf8PwAAE=',
+              'p5': 'ACPxb8PwAAE=',
+              'p6': 'ACOSX8PwAAE=',
+              'min': 'ACN6HsPwAAE='
+            }.get(point, '') }}
+          # Round to 0.5 degC steps.
+          clean_value: "{{ ((value | float(0)) * 2) | round(0) / 2 }}"
+
+      # Refuse unknown points and values outside the limits above.
+      - if:
+          - condition: template
+            value_template: "{{ oa == '' or clean_value < 15 or clean_value > 55 }}"
+        then:
+          - stop: "Invalid curve point or value"
+            error: true
+
+      - action: rest_command.oilon_easyace_write_value
+        data:
+          oa: "{{ oa }}"
+          value: "{{ clean_value }}"
+        response_variable: write_response
+
+      - if:
+          - condition: template
+            value_template: "{{ write_response['status'] != 200 }}"
+        then:
+          - stop: "Heat pump rejected the write (HTTP status other than 200)"
+            error: true
+
+      # HTTP 200 alone does not prove that the controller accepted the value.
+      # Give the controller a moment, then re-read the curve and check the
+      # sensor of the point you changed. Updating one
+      # entity of a REST resource refreshes every sensor of that resource.
+      - delay: "00:00:02"
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.oilon_easyace_circuit_2_curve_maximum

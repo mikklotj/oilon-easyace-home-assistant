@@ -1,0 +1,574 @@
+# Oilon EasyAce ground-source heat pump -> Home Assistant
+#
+# Package file. Copy to <config>/packages/oilon_easyace.yaml and enable packages
+# in configuration.yaml (see README.md). Required secrets are listed in
+# secrets.example.yaml.
+#
+# Two local interfaces of the heat pump controller are used:
+#   1. Modbus TCP (port 502)            -> `modbus:` section
+#   2. Controller web server JSON API   -> `rest:` and `rest_command:` sections
+#      (jsongen.html, Siemens Climatix style; see docs/registers.md)
+#
+# Register addresses and object addresses (OA codes) were observed on ONE unit.
+# They may differ between models and firmware versions. Verify before relying
+# on them, and never write values you have not verified (see README "Safety").
+#
+# Entity IDs are derived from the names below (e.g. "Oilon EasyAce Status code"
+# -> sensor.oilon_easyace_status_code). The template section at the end refers
+# to those IDs; if you rename entities, update the templates too.
+
+modbus:
+  - name: oilon_easyace
+    type: tcp
+    host: !secret oilon_host
+    port: 502
+    # The controller can be slow to answer, especially over Wi-Fi.
+    timeout: 5
+    sensors:
+      # ---------------------------------------------------------------- status
+      - name: "Oilon EasyAce Bus test"
+        unique_id: oilon_easyace_bus_test
+        address: 0
+        input_type: holding
+        data_type: int16
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Status code"
+        unique_id: oilon_easyace_status_raw
+        address: 8
+        input_type: holding
+        data_type: int16
+        scan_interval: 15
+
+      - name: "Oilon EasyAce Compressor status code"
+        unique_id: oilon_easyace_compressor_status_raw
+        address: 9
+        input_type: holding
+        data_type: int16
+        scan_interval: 15
+
+      - name: "Oilon EasyAce Alarm word 1"
+        unique_id: oilon_easyace_alarm_word_1
+        address: 2
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Alarm word 2"
+        unique_id: oilon_easyace_alarm_word_2
+        address: 3
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Alarm word 3"
+        unique_id: oilon_easyace_alarm_word_3
+        address: 4
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Alarm word 4"
+        unique_id: oilon_easyace_alarm_word_4
+        address: 5
+        input_type: holding
+        data_type: uint16
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Relative power"
+        unique_id: oilon_easyace_relative_power
+        address: 13
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "%"
+        state_class: measurement
+        scan_interval: 30
+
+      # ---------------------------------------------------------- temperatures
+      # `nan_value: 31082` makes Home Assistant report "unknown" if a register
+      # returns the raw value +/-31082 (HA's modbus integration checks both signs).
+      # Registers 30, 31, 35 and 76 (suction/discharge gas temperature, heating
+      # return, suction superheat) are deliberately left out: on the reference
+      # unit they only ever returned constant values. See docs/registers.md.
+
+      - name: "Oilon EasyAce Brine in"
+        unique_id: oilon_easyace_brine_in
+        address: 32
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Evaporating temperature"
+        unique_id: oilon_easyace_evaporating_temperature
+        address: 33
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Brine out"
+        unique_id: oilon_easyace_brine_out
+        address: 34
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Condensing temperature"
+        unique_id: oilon_easyace_condensing_temperature
+        address: 36
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Heating flow"
+        unique_id: oilon_easyace_heating_flow
+        address: 37
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Hot water tank"
+        unique_id: oilon_easyace_hot_water
+        address: 42
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Heating target"
+        unique_id: oilon_easyace_heating_target
+        address: 63
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Hot water target"
+        unique_id: oilon_easyace_hot_water_target
+        address: 64
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        nan_value: 31082
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 30
+
+      # ------------------------------------------------------ electrical/power
+      - name: "Oilon EasyAce System current"
+        unique_id: oilon_easyace_system_current
+        address: 51
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Compressor frequency"
+        unique_id: oilon_easyace_compressor_frequency
+        address: 77
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "Hz"
+        device_class: frequency
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Electric heater power"
+        unique_id: oilon_easyace_resistor_power
+        address: 78
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Ground circuit power"
+        unique_id: oilon_easyace_ground_power
+        address: 79
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Electrical power"
+        unique_id: oilon_easyace_electrical_power
+        address: 80
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Heating power"
+        unique_id: oilon_easyace_heating_power
+        address: 81
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        scan_interval: 30
+
+      - name: "Oilon EasyAce Heating COP"
+        unique_id: oilon_easyace_heating_cop
+        address: 89
+        input_type: holding
+        data_type: int16
+        scale: 0.01
+        precision: 2
+        state_class: measurement
+        scan_interval: 30
+
+      # ------------------------------------------------- counters (32-bit)
+      # 32-bit values span two registers with the low word first.
+      # Without `swap: word` the values are garbage (billions of kWh).
+      - name: "Oilon EasyAce Ground energy"
+        unique_id: oilon_easyace_ground_energy
+        address: 82
+        input_type: holding
+        data_type: uint32
+        swap: word
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+
+      - name: "Oilon EasyAce Electrical energy"
+        unique_id: oilon_easyace_electrical_energy
+        address: 84
+        input_type: holding
+        data_type: uint32
+        swap: word
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+
+      - name: "Oilon EasyAce Heating energy"
+        unique_id: oilon_easyace_heating_energy
+        address: 86
+        input_type: holding
+        data_type: uint32
+        swap: word
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+
+      - name: "Oilon EasyAce Compressor runtime"
+        unique_id: oilon_easyace_compressor_runtime
+        address: 92
+        input_type: holding
+        data_type: uint32
+        swap: word
+        unit_of_measurement: "h"
+        device_class: duration
+        state_class: total_increasing
+        scan_interval: 60
+
+      - name: "Oilon EasyAce Compressor starts"
+        unique_id: oilon_easyace_compressor_starts
+        address: 94
+        input_type: holding
+        data_type: uint32
+        swap: word
+        state_class: total_increasing
+        scan_interval: 60
+
+# --------------------------------------------------------------------------
+# Controller web server JSON API (read)
+#
+# The controller expects its PIN as a query parameter, so the complete URL is
+# a secret. `!secret` replaces a whole YAML value (it cannot be used inside a
+# string or a template), therefore each resource URL lives in secrets.yaml.
+# The OA codes inside each URL must match the value_templates below; see
+# secrets.example.yaml for the exact URLs.
+# --------------------------------------------------------------------------
+rest:
+  # oilon_json_read_url_fast: OA=AyKQeXo7AAE= & OA=AyJzpXo7AAE=
+  - resource: !secret oilon_json_read_url_fast
+    authentication: basic
+    username: !secret oilon_json_username
+    password: !secret oilon_json_password
+    timeout: 15
+    scan_interval: 30
+    sensor:
+      - name: "Oilon EasyAce Outdoor temperature"
+        unique_id: oilon_easyace_outdoor_temperature
+        availability: >-
+          {{ value_json['values']['AyKQeXo7AAE='][0] | float(999) | abs < 300 }}
+        value_template: "{{ value_json['values']['AyKQeXo7AAE='][0] | round(2) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+      - name: "Oilon EasyAce Heating circuit 2 flow"
+        unique_id: oilon_easyace_heating_circuit_2_flow
+        availability: >-
+          {{ value_json['values']['AyJzpXo7AAE='][0] | float(999) | abs < 300 }}
+        value_template: "{{ value_json['values']['AyJzpXo7AAE='][0] | round(2) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+  # oilon_json_read_url_slow: 14 OA codes, see secrets.example.yaml
+  - resource: !secret oilon_json_read_url_slow
+    authentication: basic
+    username: !secret oilon_json_username
+    password: !secret oilon_json_password
+    timeout: 15
+    scan_interval: 60
+    sensor:
+      - name: "Oilon EasyAce Average outdoor temperature"
+        unique_id: oilon_easyace_average_outdoor_temperature
+        availability: >-
+          {{ value_json['values']['ACPOV3o7AAE='][0] | float(999) | abs < 300 }}
+        value_template: "{{ value_json['values']['ACPOV3o7AAE='][0] | round(2) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+      - name: "Oilon EasyAce Compressor delay"
+        unique_id: oilon_easyace_compressor_delay
+        value_template: "{{ value_json['values']['ACOUmNm6AAE='][0] | round(0) }}"
+        unit_of_measurement: "s"
+        device_class: duration
+        state_class: measurement
+
+      # On the reference unit this object returned a plain number instead of
+      # a list, hence no [0] index.
+      - name: "Oilon EasyAce Average COP"
+        unique_id: oilon_easyace_average_cop
+        value_template: "{{ value_json['values']['ACIdJ096AAE='] | round(2) }}"
+        state_class: measurement
+
+      - name: "Oilon EasyAce Electric heater energy"
+        unique_id: oilon_easyace_resistor_energy
+        value_template: "{{ value_json['values']['ACMpF096AAE='][0] | round(2) }}"
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      # Pressures read 999.9 when the value is unavailable.
+      - name: "Oilon EasyAce Evaporating pressure"
+        unique_id: oilon_easyace_evaporating_pressure
+        availability: >-
+          {{ value_json['values']['AyJSdHo7AAE='][0] | float(999.9) < 900 }}
+        value_template: "{{ value_json['values']['AyJSdHo7AAE='][0] | round(2) }}"
+        unit_of_measurement: "bar"
+        device_class: pressure
+        state_class: measurement
+
+      - name: "Oilon EasyAce Condensing pressure"
+        unique_id: oilon_easyace_condensing_pressure
+        availability: >-
+          {{ value_json['values']['AyJbCXo7AAE='][0] | float(999.9) < 900 }}
+        value_template: "{{ value_json['values']['AyJbCXo7AAE='][0] | round(2) }}"
+        unit_of_measurement: "bar"
+        device_class: pressure
+        state_class: measurement
+
+      # Heat curve of heating circuit 2 (supply water setpoints).
+      - name: "Oilon EasyAce Circuit 2 curve maximum"
+        unique_id: oilon_easyace_circuit_2_curve_max
+        value_template: "{{ value_json['values']['ACMk5cPwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve minimum"
+        unique_id: oilon_easyace_circuit_2_curve_min
+        value_template: "{{ value_json['values']['ACN6HsPwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 1"
+        unique_id: oilon_easyace_circuit_2_curve_point_1
+        value_template: "{{ value_json['values']['ACN1L8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 2"
+        unique_id: oilon_easyace_circuit_2_curve_point_2
+        value_template: "{{ value_json['values']['ACMWH8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 3"
+        unique_id: oilon_easyace_circuit_2_curve_point_3
+        value_template: "{{ value_json['values']['ACM3D8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 4"
+        unique_id: oilon_easyace_circuit_2_curve_point_4
+        value_template: "{{ value_json['values']['ACPQf8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 5"
+        unique_id: oilon_easyace_circuit_2_curve_point_5
+        value_template: "{{ value_json['values']['ACPxb8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+      - name: "Oilon EasyAce Circuit 2 curve point 6"
+        unique_id: oilon_easyace_circuit_2_curve_point_6
+        value_template: "{{ value_json['values']['ACOSX8PwAAE='][0] | round(1) }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+
+# --------------------------------------------------------------------------
+# Controller web server JSON API (write)
+#
+# WARNING: writing changes how the heat pump heats your home. Read the
+# "Safety" section of README.md first. The URL (with PIN) is a secret; it
+# contains the Jinja placeholders {{ oa }} and {{ value }}, which Home
+# Assistant renders because rest_command `url` is a template field.
+#
+# Usage (only with OA codes you have verified on your own unit):
+#   action: rest_command.oilon_easyace_write_value
+#   data:
+#     oa: "ACN1L8PwAAE="
+#     value: 38.0
+# --------------------------------------------------------------------------
+rest_command:
+  oilon_easyace_write_value:
+    url: !secret oilon_json_write_url
+    method: get
+    authentication: basic
+    username: !secret oilon_json_username
+    password: !secret oilon_json_password
+    timeout: 15
+
+# --------------------------------------------------------------------------
+# Decoded helpers
+# --------------------------------------------------------------------------
+template:
+  - sensor:
+      # English status text. A Finnish variant is in examples/status_fi.yaml.
+      # Source of the code list: see docs/status-codes.md.
+      - name: "Oilon EasyAce Status"
+        unique_id: oilon_easyace_status
+        icon: mdi:heat-pump
+        availability: >-
+          {{ states('sensor.oilon_easyace_status_code') | is_number }}
+        state: >-
+          {% set value = states('sensor.oilon_easyace_status_code') | int(-1) %}
+          {{ {
+            0: 'Alarm',
+            1: 'Waiting for start button',
+            2: 'Waiting for remote run permission',
+            9: 'Stopping',
+            10: 'No heating demand',
+            11: 'No cooling demand',
+            17: 'Waiting for restart interval',
+            18: 'Compressor not ready',
+            19: 'Waiting for discharge gas to cool down',
+            20: 'Waiting for evaporator flow',
+            23: 'Ground circuit cold',
+            24: 'Waiting for condenser flow',
+            25: 'Condenser hot',
+            26: 'Condenser cold',
+            27: 'Ground circuit hot',
+            30: 'Ready to start',
+            31: 'Remote control',
+            49: 'Starting',
+            50: 'Running',
+            51: 'Heating space heating water',
+            52: 'Heating domestic hot water',
+            54: 'Legionella cycle',
+            55: 'Cooling',
+            56: 'Heating space heating water, electric heater on',
+            57: 'Heating domestic hot water, electric heater on',
+            58: 'Legionella cycle, electric heater on',
+            59: 'Remote control',
+            61: 'Evaporator cold',
+            62: 'Condenser hot',
+            63: 'Current limit',
+            70: 'Heating space heating water with electric heater only',
+            71: 'Heating domestic hot water with electric heater only',
+            72: 'Legionella cycle with electric heater only'
+          }.get(value, 'Unknown status ' ~ value) }}
+
+  - binary_sensor:
+      # "Running" = status codes in which the compressor (or the electric
+      # heater) is actively producing heat/cooling, per the list above.
+      - name: "Oilon EasyAce Compressor"
+        unique_id: oilon_easyace_compressor_running
+        device_class: running
+        availability: >-
+          {{ states('sensor.oilon_easyace_status_code') | is_number }}
+        state: >-
+          {{ states('sensor.oilon_easyace_status_code') | int(-1)
+             in [50, 51, 52, 54, 55, 56, 57, 58, 59, 63, 70, 71, 72] }}
+
+      # Any non-zero alarm word = an active alarm.
+      - name: "Oilon EasyAce Alarm"
+        unique_id: oilon_easyace_alarm
+        device_class: problem
+        state: >-
+          {{ states('sensor.oilon_easyace_alarm_word_1') | int(0) != 0
+             or states('sensor.oilon_easyace_alarm_word_2') | int(0) != 0
+             or states('sensor.oilon_easyace_alarm_word_3') | int(0) != 0
+             or states('sensor.oilon_easyace_alarm_word_4') | int(0) != 0 }}

@@ -1,0 +1,54 @@
+# Optional: Finnish status text for the Oilon EasyAce package.
+#
+# Copy this file to <config>/packages/oilon_easyace_status_fi.yaml next to
+# packages/oilon_easyace.yaml. It adds a second sensor,
+# sensor.oilon_easyace_tila, with the status text in Finnish. The English
+# sensor.oilon_easyace_status keeps working.
+#
+# Valinnainen: tilakoodi suomeksi. Kopioi tiedosto packages-kansioon
+# oilon_easyace.yaml-paketin viereen.
+
+template:
+  - sensor:
+      - name: "Oilon EasyAce Tila"
+        unique_id: oilon_easyace_status_fi
+        icon: mdi:heat-pump
+        availability: >-
+          {{ states('sensor.oilon_easyace_status_code') | is_number }}
+        state: >-
+          {% set value = states('sensor.oilon_easyace_status_code') | int(-1) %}
+          {{ {
+            0: 'Hälytys',
+            1: 'Odotan käynnistyspainiketta',
+            2: 'Odotan etäkäyntilupaa',
+            9: 'Pysähtymässä',
+            10: 'Ei lämmitystarvetta',
+            11: 'Ei jäähdytystarvetta',
+            17: 'Odotan käynnistysväliä',
+            18: 'Kompressori ei ole valmis',
+            19: 'Odotan kuumakaasun jäähtymistä',
+            20: 'Odotan höyrystinvirtausta',
+            23: 'Maapiiri kylmä',
+            24: 'Odotan lauhdutinvirtausta',
+            25: 'Lauhdutin kuuma',
+            26: 'Lauhdutin kylmä',
+            27: 'Maapiiri kuuma',
+            30: 'Valmis käynnistymään',
+            31: 'Etäohjaus',
+            49: 'Käynnistymässä',
+            50: 'Käynnissä',
+            51: 'Lämmittää lämmitysvettä',
+            52: 'Lämmittää käyttövettä',
+            54: 'Legionellatappo',
+            55: 'Jäähdytys',
+            56: 'Lämmittää lämmitysvettä, vastus mukana',
+            57: 'Lämmittää käyttövettä, vastus mukana',
+            58: 'Legionellatappo, vastus mukana',
+            59: 'Etäohjaus',
+            61: 'Höyrystin kylmä',
+            62: 'Lauhdutin kuuma',
+            63: 'Virtaraja',
+            70: 'Lämmittää lämmitysvettä vastuksella',
+            71: 'Lämmittää käyttövettä vastuksella',
+            72: 'Legionellatappo vastuksella'
+          }.get(value, 'Tuntematon tila ' ~ value) }}

@@ -1,0 +1,19 @@
+# Never commit real secrets
+secrets.yaml
+**/secrets.yaml
+*.secret.yaml
+
+# Browser captures can contain PINs and Authorization headers
+*.har
+
+# Home Assistant runtime files (if this repo is used as a config dir)
+.storage/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,25 @@
+# Example automation: notify when the electric backup heater starts.
+#
+# The electric heater is much more expensive to run than the compressor
+# (COP about 1 vs. about 4-5), so it is useful to know when it starts.
+# Paste into automations.yaml (or the automation editor in YAML mode) and
+# replace notify.notify with your own notify service.
+
+- id: oilon_easyace_electric_heater_started
+  alias: "Heat pump: electric heater started"
+  description: "Notify when the Oilon EasyAce electric backup heater turns on."
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.oilon_easyace_electric_heater_power
+      above: 0
+      # Ignore very short pulses.
+      for: "00:02:00"
+  actions:
+    - action: notify.notify
+      data:
+        title: "Heat pump electric heater on"
+        message: >-
+          The Oilon EasyAce is using its electric heater:
+          {{ states('sensor.oilon_easyace_electric_heater_power') }} kW.
+          Status: {{ states('sensor.oilon_easyace_status') }}.
+  mode: single
