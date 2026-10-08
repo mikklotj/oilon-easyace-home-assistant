@@ -99,7 +99,8 @@ instructions: [docs/registers.md → Finding OA codes](docs/registers.md#finding
 ## Requirements
 
 - Home Assistant 2024.10 or newer (the examples use the `triggers:`/`actions:`
-  syntax). Developed on 2026.9.
+  syntax). Developed on 2026.9; the package passes
+  `hass --script check_config` on Home Assistant 2026.9.4.
 - An Oilon EasyAce heat pump with its controller connected to your LAN.
   **A wired connection is strongly recommended.** See
   [Troubleshooting](#troubleshooting).
